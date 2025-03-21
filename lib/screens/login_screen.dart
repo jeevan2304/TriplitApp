@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-class SignupScreen extends StatelessWidget {
+
+class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,14 +16,10 @@ class SignupScreen extends StatelessWidget {
               SizedBox(height: 10),
 
               Text(
-                "Triplit",
-                style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87),
+                "Welcome Back!",
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
               ),
               SizedBox(height: 30),
-
-              // Username Field
-              _buildTextField(icon: Icons.person, hintText: "Username"),
-              SizedBox(height: 15),
 
               // Email Field
               _buildTextField(icon: Icons.email, hintText: "Email"),
@@ -31,32 +27,24 @@ class SignupScreen extends StatelessWidget {
 
               // Password Field
               _buildTextField(icon: Icons.lock, hintText: "Password", isPassword: true),
-              SizedBox(height: 15),
-
-              // Confirm Password Field
-              _buildTextField(icon: Icons.lock, hintText: "Confirm Password", isPassword: true),
               SizedBox(height: 25),
 
-              // Sign Up Button
-              _buildSignupButton(),
+              // Login Button
+              _buildLoginButton(),
 
               SizedBox(height: 20),
 
-              // Already have an account? Log in
+              // Don't have an account? Sign Up
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Already have an account?", style: TextStyle(fontSize: 16)),
+                  Text("Don't have an account?", style: TextStyle(fontSize: 16)),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginScreen()),
-                      );
+                      Navigator.pop(context); // Navigate back to Signup
                     },
-                    child: Text("Log in", style: TextStyle(fontSize: 16, color: Colors.deepPurple)),
+                    child: Text("Sign Up", style: TextStyle(fontSize: 16, color: Colors.deepPurple)),
                   ),
-
                 ],
               ),
             ],
@@ -83,8 +71,8 @@ class SignupScreen extends StatelessWidget {
     );
   }
 
-  // Custom Sign Up Button
-  Widget _buildSignupButton() {
+  // Custom Login Button
+  Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
       height: 50,
@@ -96,7 +84,7 @@ class SignupScreen extends StatelessWidget {
           backgroundColor: Colors.deepPurple,
         ),
         child: Text(
-          "Sign Up",
+          "Log In",
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
