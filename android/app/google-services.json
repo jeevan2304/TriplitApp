@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "708255285692",
+    "project_id": "triplit-f531a",
+    "storage_bucket": "triplit-f531a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:708255285692:android:b2fd8c4fb10312fb8f2bb9",
+        "android_client_info": {
+          "package_name": "com.example.triplit_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2dBJE_0YQXcTIUg5vKfftH580Yc7Qccg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
