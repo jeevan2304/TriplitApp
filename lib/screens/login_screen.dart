@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'welcome_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String errorMessage = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -11,39 +22,48 @@ class LoginScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // App Logo or Icon
               Icon(Icons.travel_explore, size: 80, color: Colors.deepPurple),
               SizedBox(height: 10),
-
-              Text(
-                "Welcome Back!",
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
-              ),
+              Text("Welcome Back!",
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
               SizedBox(height: 30),
 
-              // Email Field
-              _buildTextField(icon: Icons.email, hintText: "Email"),
+              // Email
+              _buildTextField(
+                  icon: Icons.email,
+                  hintText: "Email",
+                  controller: _emailController),
               SizedBox(height: 15),
 
-              // Password Field
-              _buildTextField(icon: Icons.lock, hintText: "Password", isPassword: true),
-              SizedBox(height: 25),
+              // Password
+              _buildTextField(
+                  icon: Icons.lock,
+                  hintText: "Password",
+                  controller: _passwordController,
+                  isPassword: true),
+              SizedBox(height: 20),
+
+              // Error Message
+              if (errorMessage.isNotEmpty)
+                Text(errorMessage, style: TextStyle(color: Colors.red)),
+
+              SizedBox(height: 10),
 
               // Login Button
               _buildLoginButton(),
 
               SizedBox(height: 20),
 
-              // Don't have an account? Sign Up
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text("Don't have an account?", style: TextStyle(fontSize: 16)),
                   TextButton(
                     onPressed: () {
-                      Navigator.pop(context); // Navigate back to Signup
+                      Navigator.pop(context);
                     },
-                    child: Text("Sign Up", style: TextStyle(fontSize: 16, color: Colors.deepPurple)),
+                    child: Text("Sign Up",
+                        style: TextStyle(fontSize: 16, color: Colors.deepPurple)),
                   ),
                 ],
               ),
@@ -54,9 +74,14 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  // Custom TextField Widget
-  Widget _buildTextField({required IconData icon, required String hintText, bool isPassword = false}) {
+  Widget _buildTextField({
+    required IconData icon,
+    required String hintText,
+    required TextEditingController controller,
+    bool isPassword = false,
+  }) {
     return TextField(
+      controller: controller,
       obscureText: isPassword,
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: Colors.deepPurple),
@@ -71,22 +96,39 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  // Custom Login Button
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () async {
+          try {
+            final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+            );
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => WelcomeScreen(email: _emailController.text.trim()),
+              ),
+            );
+          } on FirebaseAuthException catch (e) {
+            setState(() {
+              errorMessage = e.message ?? 'An error occurred';
+            });
+          }
+        },
+
         style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: EdgeInsets.symmetric(vertical: 12),
           backgroundColor: Colors.deepPurple,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        child: Text(
-          "Log In",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
+        child: Text("Log In",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
     );
   }
