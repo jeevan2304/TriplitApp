@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'welcome_screen.dart';
+import 'travel_predictor_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -108,10 +109,11 @@ class _LoginScreenState extends State<LoginScreen> {
               password: _passwordController.text.trim(),
             );
 
+            // Navigate to Travel Predictor Screen instead of WelcomeScreen
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => WelcomeScreen(email: _emailController.text.trim()),
+                builder: (context) => const TravelPredictorScreen(), // Make sure this class exists
               ),
             );
           } on FirebaseAuthException catch (e) {
@@ -120,16 +122,16 @@ class _LoginScreenState extends State<LoginScreen> {
             });
           }
         },
-
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.deepPurple,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: Text("Log In",
+        child: const Text("Log In",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
     );
   }
+
 }
