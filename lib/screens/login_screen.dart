@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:triplit_app/screens/dashboard_screen.dart';
 import 'welcome_screen.dart';
 import 'travel_predictor_screen.dart';
 
@@ -113,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => const TravelPredictorScreen(), // Make sure this class exists
+                builder: (context) => const DashboardScreen(), // Make sure this class exists
               ),
             );
           } on FirebaseAuthException catch (e) {
