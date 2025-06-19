@@ -25,13 +25,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String? _currentGroupId;
   String? _currentTripId;
-  String? _currentExpenseId;
+
+  Map<String, double> _debts = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDebts();
+  }
+
+  @override
+  void dispose() {
+    _groupNameController.dispose();
+    _memberEmailController.dispose();
+    _tripNameController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
+    _expenseTitleController.dispose();
+    _expenseAmountController.dispose();
+    super.dispose();
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Triplit Dashboard"),
         backgroundColor: Colors.deepPurple,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            tooltip: "View Debts",
+            onPressed: _debts.isNotEmpty ? _showDebtDialog : null,
+          )
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -43,6 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             TextField(
               controller: _groupNameController,
               decoration: const InputDecoration(hintText: "Enter group name"),
+
             ),
             ElevatedButton(
               onPressed: _createGroup,
@@ -60,7 +89,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: const Text("Add Member"),
               ),
               const SizedBox(height: 20),
-
               const Text("Plan a Trip", style: TextStyle(fontSize: 18)),
               TextField(
                 controller: _tripNameController,
@@ -79,7 +107,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: const Text("Create Trip"),
               ),
               const SizedBox(height: 20),
-
               const Text("Add Expense", style: TextStyle(fontSize: 18)),
               TextField(
                 controller: _expenseTitleController,
@@ -95,36 +122,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: const Text("Add Expense & Split"),
               ),
             ],
-            if (_currentGroupId != null && _currentTripId != null && _currentExpenseId != null)
-              FutureBuilder<Map<String, double>>(
-                future: _calculateUserDebtsByPerson(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.only(top: 24),
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-
-                  final debts = snapshot.data ?? {};
-
-                  if (debts.isEmpty) return const SizedBox.shrink();
-
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("You owe:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
-                        ...debts.entries.map((entry) => Text(
-                          "₹${entry.value.toStringAsFixed(2)} to ${entry.key}",
-                          style: const TextStyle(fontSize: 16),
-                        )),
-                      ],
-                    ),
-                  );
-                },
-              ),
           ],
         ),
       ),
@@ -220,16 +217,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final members = List<String>.from(groupDoc.data()?['members'] ?? []);
 
     final perHead = amount / members.length;
-    final splitDetails = {
-      for (var member in members) member: perHead
-    };
+    final splitDetails = { for (var m in members) m: perHead };
 
-    await _firestore.collection('groups')
+    // Generate a unique expense ID
+    final expenseDoc = _firestore
+        .collection('groups')
         .doc(_currentGroupId)
         .collection('trips')
         .doc(_currentTripId)
         .collection('expenses')
-        .add({
+        .doc(); // creates a reference with an ID
+
+    await expenseDoc.set({
+      'expenseId': expenseDoc.id, // storing expense ID
       'title': title,
       'amount': amount,
       'paidBy': _auth.currentUser?.email,
@@ -244,33 +244,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<Map<String, double>> _calculateUserDebtsByPerson() async {
-    if (_currentGroupId == null || _currentTripId == null) return {};
-
     final userEmail = _auth.currentUser?.email;
     if (userEmail == null) return {};
 
-    final expensesSnapshot = await _firestore
-        .collection('groups')
-        .doc(_currentGroupId)
-        .collection('trips')
-        .doc(_currentTripId)
-        .collection('expenses')
-        .get();
-
     Map<String, double> debtMap = {};
 
-    for (var doc in expensesSnapshot.docs) {
-      final data = doc.data();
-      final paidBy = data['paidBy'];
-      final splitDetails = Map<String, dynamic>.from(data['splitDetails'] ?? {});
+    // Find all groups the user is part of
+    final groupsSnapshot = await _firestore.collection('groups')
+        .where('members', arrayContains: userEmail)
+        .get();
 
-      if (paidBy != null && paidBy != userEmail && splitDetails.containsKey(userEmail)) {
-        final amount = (splitDetails[userEmail] ?? 0).toDouble();
-        debtMap[paidBy] = (debtMap[paidBy] ?? 0) + amount;
+    for (var groupDoc in groupsSnapshot.docs) {
+      final groupId = groupDoc.id;
+
+      // Fetch all trips in the group
+      final tripsSnapshot = await _firestore
+          .collection('groups')
+          .doc(groupId)
+          .collection('trips')
+          .get();
+
+      for (var tripDoc in tripsSnapshot.docs) {
+        final tripId = tripDoc.id;
+
+        // Fetch all expenses in the trip
+        final expensesSnapshot = await _firestore
+            .collection('groups')
+            .doc(groupId)
+            .collection('trips')
+            .doc(tripId)
+            .collection('expenses')
+            .get();
+
+        for (var expenseDoc in expensesSnapshot.docs) {
+          final data = expenseDoc.data();
+          final paidBy = data['paidBy'];
+          final splitDetails = Map<String, dynamic>.from(data['splitDetails'] ?? {});
+
+          if (paidBy != null &&
+              paidBy != userEmail &&
+              splitDetails.containsKey(userEmail)) {
+            final amount = (splitDetails[userEmail] ?? 0).toDouble();
+            debtMap[paidBy] = (debtMap[paidBy] ?? 0) + amount;
+          }
+        }
       }
     }
 
     return debtMap;
   }
 
+
+  Future<void> _loadDebts() async {
+    final debts = await _calculateUserDebtsByPerson();
+    setState(() {
+      _debts = debts;
+    });
+
+    if (_debts.isNotEmpty) {
+      Future.delayed(Duration.zero, _showDebtDialog);
+    }
+  }
+
+  void _showDebtDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("You owe your friends"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _debts.entries.map((entry) {
+              return ListTile(
+                leading: const Icon(Icons.money_off, color: Colors.red),
+                title: Text(entry.key),
+                subtitle: Text("₹${entry.value.toStringAsFixed(2)}"),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
