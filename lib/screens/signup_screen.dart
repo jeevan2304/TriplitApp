@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:triplit_app/screens/dashboard_screen.dart';
 import 'login_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -48,7 +49,7 @@ class _SignupScreenState extends State<SignupScreen>{
       });
       _showMessage("Signup Successful!");
 
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()),);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardScreen()),);
     }on FirebaseAuthException catch(e){
       _showMessage(e.message??"Signup Failed");
     }
